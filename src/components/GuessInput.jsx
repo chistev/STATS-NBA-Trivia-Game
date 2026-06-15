@@ -40,7 +40,7 @@ export default function GuessInput({ onGuess, disabled, guessesLeft, showError, 
   return (
     <form onSubmit={handleSubmit} className="mt-8">
       <div className="relative">
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 relative">
             <input
               ref={inputRef}
@@ -55,7 +55,7 @@ export default function GuessInput({ onGuess, disabled, guessesLeft, showError, 
               autoComplete="off"
             />
             {showSuggestions && !disabled && (
-              <div className="absolute z-10 w-full mt-2 bg-slate-800 rounded-xl border border-slate-700 shadow-xl overflow-hidden">
+              <div className="absolute z-10 w-full mt-2 bg-slate-800 rounded-xl border border-slate-700 shadow-xl overflow-hidden animate-in fade-in duration-200">
                 {suggestions.map((suggestion, idx) => (
                   <button
                     key={idx}
@@ -72,19 +72,24 @@ export default function GuessInput({ onGuess, disabled, guessesLeft, showError, 
           <button
             type="submit"
             disabled={disabled || !guess.trim()}
-            className="px-10 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-slate-700 disabled:to-slate-700 rounded-2xl font-semibold transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+            className="px-10 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-slate-700 disabled:to-slate-700 rounded-2xl font-semibold transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none"
           >
             GUESS 🏀
           </button>
         </div>
         {showError && (
-          <p className="text-red-400 text-sm mt-2 animate-shake">
+          <p className="text-red-400 text-sm mt-2 animate-shake text-center">
             {errorMessage}
           </p>
         )}
-        <p className="text-center text-sm text-slate-400 mt-3">
-          💡 {guessesLeft} {guessesLeft === 1 ? 'guess' : 'guesses'} remaining • Be specific!
-        </p>
+        <div className="flex justify-between items-center mt-3">
+          <p className="text-sm text-slate-400">
+            💡 {guessesLeft} {guessesLeft === 1 ? 'guess' : 'guesses'} remaining
+          </p>
+          <p className="text-xs text-slate-500">
+            Each wrong guess reveals a clue!
+          </p>
+        </div>
       </div>
     </form>
   );

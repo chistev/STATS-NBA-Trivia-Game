@@ -7,7 +7,8 @@ import ShareModal from './components/ShareModal';
 import StreakCounter from './components/StreakCounter';
 import KeyboardHints from './components/KeyboardHints';
 import Confetti from './components/Confetti';
-import { getDailyPlayer } from './data/players';
+import FeedbackPanel from './components/FeedbackPanel';
+import { getDailyPlayer, players } from './data/players'; // Import players directly
 import { saveGameState, loadGameState, updateStreak, getCareerStats } from './utils/gameUtils';
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
   const [errorMessage, setErrorMessage] = useState('');
   const [showConfetti, setShowConfetti] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(null);
+  const [feedback, setFeedback] = useState(null);
 
   // Initialize
   useEffect(() => {
@@ -82,6 +84,50 @@ export default function App() {
     return `${hours}h ${minutes}m ${seconds}s`;
   };
 
+  // Generate stat-based feedback for wrong guesses
+  const generateFeedback = (guessedPlayer, actualPlayer) => {
+    const feedbackItems = [];
+    
+    // Team comparison
+    if (guessedPlayer.team === actualPlayer.team) {
+      feedbackItems.push({ type: 'correct', label: 'Team', value: guessedPlayer.team, message: '✅ Same team!' });
+    } else {
+      feedbackItems.push({ type: 'wrong', label: 'Team', value: guessedPlayer.team, message: `❌ Different team (Plays for ${actualPlayer.team})` });
+    }
+    
+    // Position comparison
+    if (guessedPlayer.position === actualPlayer.position) {
+      feedbackItems.push({ type: 'correct', label: 'Position', value: guessedPlayer.position, message: '✅ Same position!' });
+    } else {
+      feedbackItems.push({ type: 'wrong', label: 'Position', value: guessedPlayer.position, message: `❌ Different position (${actualPlayer.position})` });
+    }
+    
+    // Height comparison
+    const guessedHeight = parseInt(guessedPlayer.height.replace(/[^0-9]/g, ''));
+    const actualHeight = parseInt(actualPlayer.height.replace(/[^0-9]/g, ''));
+    if (guessedHeight === actualHeight) {
+      feedbackItems.push({ type: 'correct', label: 'Height', value: guessedPlayer.height, message: '✅ Same height!' });
+    } else if (guessedHeight > actualHeight) {
+      feedbackItems.push({ type: 'wrong', label: 'Height', value: guessedPlayer.height, message: `📏 Taller (Actual: ${actualPlayer.height})` });
+    } else {
+      feedbackItems.push({ type: 'wrong', label: 'Height', value: guessedPlayer.height, message: `📏 Shorter (Actual: ${actualPlayer.height})` });
+    }
+    
+    // Points comparison
+    const guessedPts = guessedPlayer.stats.points;
+    const actualPts = actualPlayer.stats.points;
+    const ptsDiff = Math.abs(guessedPts - actualPts);
+    if (guessedPts === actualPts) {
+      feedbackItems.push({ type: 'correct', label: 'PPG', value: guessedPts, message: '✅ Same PPG!' });
+    } else if (guessedPts > actualPts) {
+      feedbackItems.push({ type: 'wrong', label: 'PPG', value: guessedPts, message: `📊 PPG: ${guessedPts} (Actual: ${actualPts}) - ${ptsDiff.toFixed(1)} higher` });
+    } else {
+      feedbackItems.push({ type: 'wrong', label: 'PPG', value: guessedPts, message: `📊 PPG: ${guessedPts} (Actual: ${actualPts}) - ${ptsDiff.toFixed(1)} lower` });
+    }
+    
+    return feedbackItems;
+  };
+
   const handleRevealClue = (index) => {
     if (revealedClues[index] || gameOver || gameWon) return;
 
@@ -95,15 +141,25 @@ export default function App() {
 
     const normalized = guessText.toLowerCase().trim();
     const isCorrect = normalized === dailyPlayer.name.toLowerCase();
+    
+    // Find guessed player object for feedback - use imported players array
+    const guessedPlayerObj = players.find(p => p.name.toLowerCase() === normalized);
 
     const newGuessEntry = {
       text: guessText.trim(),
       isCorrect,
-      timestamp: new Date()
+      timestamp: new Date(),
+      feedback: !isCorrect && guessedPlayerObj ? generateFeedback(guessedPlayerObj, dailyPlayer) : null
     };
 
     const newGuesses = [...guesses, newGuessEntry];
     setGuesses(newGuesses);
+    
+    // Set feedback for display
+    if (!isCorrect && guessedPlayerObj) {
+      setFeedback(newGuessEntry.feedback);
+      setTimeout(() => setFeedback(null), 5000);
+    }
 
     if (isCorrect) {
       setGameWon(true);
@@ -118,15 +174,30 @@ export default function App() {
       updateStreak(false);
       setStreak(0);
       setRevealedClues(new Array(dailyPlayer.clues.length).fill(true));
-    } else if (newGuesses.length === 2) {
-      setErrorMessage("💡 Reveal more clues to increase your score!");
+      setErrorMessage(`💀 Out of guesses! The player was ${dailyPlayer.name}`);
       setShowError(true);
-      setTimeout(() => setShowError(false), 2800);
+    } else {
+      // Reveal a clue progressively with each wrong guess
+      const nextUnrevealed = revealedClues.findIndex(r => !r);
+      if (nextUnrevealed !== -1) {
+        const newRevealed = [...revealedClues];
+        newRevealed[nextUnrevealed] = true;
+        setRevealedClues(newRevealed);
+        setErrorMessage(`🔍 Clue ${nextUnrevealed + 1} revealed!`);
+        setShowError(true);
+        setTimeout(() => setShowError(false), 2000);
+      }
+      
+      if (newGuesses.length === maxGuesses - 1) {
+        setErrorMessage("⚠️ Last chance! Make it count!");
+        setShowError(true);
+        setTimeout(() => setShowError(false), 2000);
+      }
     }
   };
 
   const cluesRevealedCount = revealedClues.filter(Boolean).length;
-  const getScore = () => gameWon ? Math.max(0, maxGuesses - guesses.length) + Math.max(0, maxGuesses - cluesRevealedCount) : 0;
+  const getScore = () => gameWon ? Math.max(0, maxGuesses - guesses.length) * 10 + Math.max(0, maxGuesses - cluesRevealedCount) * 5 : 0;
 
   const getDifficultyRating = () => {
     if (!gameWon) return "💪 TRY AGAIN";
@@ -171,6 +242,9 @@ export default function App() {
         <p className="text-slate-400">Daily NBA Player Trivia</p>
       </div>
 
+      {/* Feedback Panel */}
+      <FeedbackPanel feedback={feedback} />
+
       {/* Status */}
       {(gameOver || gameWon) && (
         <div className={`mb-8 p-8 rounded-3xl text-center border-2 ${gameWon ? 'border-green-500 bg-green-900/20' : 'border-red-500 bg-red-900/20'}`}>
@@ -185,8 +259,8 @@ export default function App() {
             </>
           )}
           <div className="flex gap-4 justify-center">
-            {gameWon && <button onClick={() => setShowShareModal(true)} className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-2xl font-semibold">Share 📤</button>}
-            <button onClick={() => window.location.reload()} className="px-8 py-3 bg-slate-700 hover:bg-slate-600 rounded-2xl font-semibold">Next Day 🔄</button>
+            {gameWon && <button onClick={() => setShowShareModal(true)} className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-2xl font-semibold transition-all">Share 📤</button>}
+            <button onClick={() => window.location.reload()} className="px-8 py-3 bg-slate-700 hover:bg-slate-600 rounded-2xl font-semibold transition-all">Next Day 🔄</button>
           </div>
         </div>
       )}
@@ -213,19 +287,39 @@ export default function App() {
           <h3 className="font-semibold text-slate-400 mb-3">GUESS HISTORY ({guesses.length}/{maxGuesses})</h3>
           <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
             {guesses.map((g, i) => (
-              <div key={i} className={`p-4 rounded-2xl flex justify-between items-center ${g.isCorrect ? 'bg-green-900/30 border border-green-500' : 'bg-red-900/20 border border-red-500/50'}`}>
-                <div className="flex items-center gap-4">
-                  <span className="text-2xl">{g.isCorrect ? '✅' : '❌'}</span>
-                  <span>{g.text}</span>
+              <div key={i} className={`p-4 rounded-2xl ${g.isCorrect ? 'bg-green-900/30 border border-green-500' : 'bg-red-900/20 border border-red-500/50'}`}>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <span className="text-2xl">{g.isCorrect ? '✅' : '❌'}</span>
+                    <span className="font-medium">{g.text}</span>
+                  </div>
+                  <span className="text-xs text-slate-500">{new Date(g.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                 </div>
-                <span className="text-xs text-slate-500">{new Date(g.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                {g.feedback && !g.isCorrect && (
+                  <div className="mt-3 pt-3 border-t border-red-500/30 text-sm space-y-1">
+                    {g.feedback.map((item, idx) => (
+                      <div key={idx} className="flex justify-between">
+                        <span className="text-slate-400">{item.label}:</span>
+                        <span className={item.type === 'correct' ? 'text-green-400' : 'text-red-400'}>
+                          {item.message}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <GuessInput onGuess={handleGuess} disabled={gameOver || gameWon} guessesLeft={maxGuesses - guesses.length} showError={showError} errorMessage={errorMessage} />
+      <GuessInput 
+        onGuess={handleGuess} 
+        disabled={gameOver || gameWon} 
+        guessesLeft={maxGuesses - guesses.length} 
+        showError={showError} 
+        errorMessage={errorMessage}
+      />
 
       <KeyboardHints />
 
