@@ -1,26 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
-import { players } from '../data/players';
 
-export default function GuessInput({ onGuess, disabled, guessesLeft, showError, errorMessage }) {
+export default function GuessInput({ onGuess, disabled, guessesLeft, showError, errorMessage, suggestions = [] }) {
   const [guess, setGuess] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
   const inputRef = useRef(null);
-
-  const playerNames = players.map(p => p.name);
 
   useEffect(() => {
     if (guess.length > 1) {
-      const filtered = playerNames.filter(name =>
+      const filtered = suggestions.filter(name =>
         name.toLowerCase().includes(guess.toLowerCase())
       ).slice(0, 5);
-      setSuggestions(filtered);
+      setFilteredSuggestions(filtered);
       setShowSuggestions(filtered.length > 0);
     } else {
-      setSuggestions([]);
+      setFilteredSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [guess]);
+  }, [guess, suggestions]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -56,7 +53,7 @@ export default function GuessInput({ onGuess, disabled, guessesLeft, showError, 
             />
             {showSuggestions && !disabled && (
               <div className="absolute z-10 w-full mt-2 bg-slate-800 rounded-xl border border-slate-700 shadow-xl overflow-hidden animate-in fade-in duration-200">
-                {suggestions.map((suggestion, idx) => (
+                {filteredSuggestions.map((suggestion, idx) => (
                   <button
                     key={idx}
                     type="button"

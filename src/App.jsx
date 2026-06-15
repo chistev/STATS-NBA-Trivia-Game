@@ -8,8 +8,13 @@ import StreakCounter from './components/StreakCounter';
 import KeyboardHints from './components/KeyboardHints';
 import Confetti from './components/Confetti';
 import FeedbackPanel from './components/FeedbackPanel';
-import { getDailyPlayer, players } from './data/players'; // Import players directly
+import AuthModal from './components/AuthModal';
+import UserProfile from './components/UserProfile';
+import Leaderboard from './components/Leaderboard';
 import { saveGameState, loadGameState, updateStreak, getCareerStats } from './utils/gameUtils';
+
+// API configuration
+const API_BASE_URL = 'http://localhost:8000/api';
 
 export default function App() {
   const [dailyPlayer, setDailyPlayer] = useState(null);
@@ -25,29 +30,84 @@ export default function App() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [feedback, setFeedback] = useState(null);
+  const [playerNames, setPlayerNames] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [sessionId] = useState(() => localStorage.getItem('session_id') || `session_${Date.now()}_${Math.random()}`);
 
-  // Initialize
+  // Authentication state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [startTime, setStartTime] = useState(null);
+
+  // Get auth headers for API calls
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('access_token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
+  // Save session ID
   useEffect(() => {
-    const player = getDailyPlayer();
-    setDailyPlayer(player);
-
-    const savedState = loadGameState();
-    const today = new Date().toDateString();
-
-    if (savedState && savedState.date === today) {
-      setRevealedClues(savedState.revealedClues || new Array(player.clues.length).fill(false));
-      setGuesses(savedState.guesses || []);
-      setGameOver(savedState.gameOver || false);
-      setGameWon(savedState.gameWon || false);
-    } else {
-      setRevealedClues(new Array(player.clues.length).fill(false));
-      setGuesses([]);
-      setGameOver(false);
-      setGameWon(false);
+    if (!localStorage.getItem('session_id')) {
+      localStorage.setItem('session_id', sessionId);
     }
+  }, [sessionId]);
 
-    setStreak(parseInt(localStorage.getItem('stats-streak') || '0'));
-    calculateTimeRemaining();
+  // Track game start time
+  useEffect(() => {
+    if (dailyPlayer && !gameOver && !gameWon) {
+      setStartTime(Date.now());
+    }
+  }, [dailyPlayer, gameOver, gameWon]);
+
+  // Fetch daily player from API
+  useEffect(() => {
+    const fetchDailyPlayer = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_BASE_URL}/daily-player/`);
+        if (!response.ok) throw new Error('Failed to fetch daily player');
+
+        const data = await response.json();
+        setDailyPlayer(data.player);
+
+        // Fetch player names for autocomplete
+        const namesResponse = await fetch(`${API_BASE_URL}/player-names/`);
+        if (namesResponse.ok) {
+          const names = await namesResponse.json();
+          setPlayerNames(names);
+        }
+
+        // Load saved game state
+        const savedState = loadGameState();
+        const today = new Date().toDateString();
+
+        if (savedState && savedState.date === today && savedState.playerId === data.player.id) {
+          setRevealedClues(savedState.revealedClues || new Array(data.player.clues.length).fill(false));
+          setGuesses(savedState.guesses || []);
+          setGameOver(savedState.gameOver || false);
+          setGameWon(savedState.gameWon || false);
+        } else {
+          setRevealedClues(new Array(data.player.clues.length).fill(false));
+          setGuesses([]);
+          setGameOver(false);
+          setGameWon(false);
+        }
+
+        setStreak(parseInt(localStorage.getItem('stats-streak') || '0'));
+        calculateTimeRemaining();
+      } catch (error) {
+        console.error('Error fetching daily player:', error);
+        setErrorMessage('Failed to load game data. Please refresh the page.');
+        setShowError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDailyPlayer();
   }, []);
 
   const calculateTimeRemaining = () => {
@@ -68,6 +128,7 @@ export default function App() {
     if (dailyPlayer) {
       saveGameState({
         date: new Date().toDateString(),
+        playerId: dailyPlayer.id,
         revealedClues,
         guesses,
         gameOver,
@@ -84,50 +145,6 @@ export default function App() {
     return `${hours}h ${minutes}m ${seconds}s`;
   };
 
-  // Generate stat-based feedback for wrong guesses
-  const generateFeedback = (guessedPlayer, actualPlayer) => {
-    const feedbackItems = [];
-    
-    // Team comparison
-    if (guessedPlayer.team === actualPlayer.team) {
-      feedbackItems.push({ type: 'correct', label: 'Team', value: guessedPlayer.team, message: '✅ Same team!' });
-    } else {
-      feedbackItems.push({ type: 'wrong', label: 'Team', value: guessedPlayer.team, message: `❌ Different team (Plays for ${actualPlayer.team})` });
-    }
-    
-    // Position comparison
-    if (guessedPlayer.position === actualPlayer.position) {
-      feedbackItems.push({ type: 'correct', label: 'Position', value: guessedPlayer.position, message: '✅ Same position!' });
-    } else {
-      feedbackItems.push({ type: 'wrong', label: 'Position', value: guessedPlayer.position, message: `❌ Different position (${actualPlayer.position})` });
-    }
-    
-    // Height comparison
-    const guessedHeight = parseInt(guessedPlayer.height.replace(/[^0-9]/g, ''));
-    const actualHeight = parseInt(actualPlayer.height.replace(/[^0-9]/g, ''));
-    if (guessedHeight === actualHeight) {
-      feedbackItems.push({ type: 'correct', label: 'Height', value: guessedPlayer.height, message: '✅ Same height!' });
-    } else if (guessedHeight > actualHeight) {
-      feedbackItems.push({ type: 'wrong', label: 'Height', value: guessedPlayer.height, message: `📏 Taller (Actual: ${actualPlayer.height})` });
-    } else {
-      feedbackItems.push({ type: 'wrong', label: 'Height', value: guessedPlayer.height, message: `📏 Shorter (Actual: ${actualPlayer.height})` });
-    }
-    
-    // Points comparison
-    const guessedPts = guessedPlayer.stats.points;
-    const actualPts = actualPlayer.stats.points;
-    const ptsDiff = Math.abs(guessedPts - actualPts);
-    if (guessedPts === actualPts) {
-      feedbackItems.push({ type: 'correct', label: 'PPG', value: guessedPts, message: '✅ Same PPG!' });
-    } else if (guessedPts > actualPts) {
-      feedbackItems.push({ type: 'wrong', label: 'PPG', value: guessedPts, message: `📊 PPG: ${guessedPts} (Actual: ${actualPts}) - ${ptsDiff.toFixed(1)} higher` });
-    } else {
-      feedbackItems.push({ type: 'wrong', label: 'PPG', value: guessedPts, message: `📊 PPG: ${guessedPts} (Actual: ${actualPts}) - ${ptsDiff.toFixed(1)} lower` });
-    }
-    
-    return feedbackItems;
-  };
-
   const handleRevealClue = (index) => {
     if (revealedClues[index] || gameOver || gameWon) return;
 
@@ -136,63 +153,118 @@ export default function App() {
     setRevealedClues(newRevealed);
   };
 
-  const handleGuess = (guessText) => {
+  const handleGuess = async (guessText) => {
     if (gameOver || gameWon || !dailyPlayer) return;
 
-    const normalized = guessText.toLowerCase().trim();
-    const isCorrect = normalized === dailyPlayer.name.toLowerCase();
-    
-    // Find guessed player object for feedback - use imported players array
-    const guessedPlayerObj = players.find(p => p.name.toLowerCase() === normalized);
+    try {
+      const response = await fetch(`${API_BASE_URL}/validate-guess/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({
+          guess: guessText,
+          session_id: sessionId
+        }),
+      });
 
-    const newGuessEntry = {
-      text: guessText.trim(),
-      isCorrect,
-      timestamp: new Date(),
-      feedback: !isCorrect && guessedPlayerObj ? generateFeedback(guessedPlayerObj, dailyPlayer) : null
-    };
+      const data = await response.json();
+      const isCorrect = data.is_correct;
 
-    const newGuesses = [...guesses, newGuessEntry];
-    setGuesses(newGuesses);
-    
-    // Set feedback for display
-    if (!isCorrect && guessedPlayerObj) {
-      setFeedback(newGuessEntry.feedback);
-      setTimeout(() => setFeedback(null), 5000);
-    }
+      const newGuessEntry = {
+        text: guessText.trim(),
+        isCorrect,
+        timestamp: new Date(),
+        feedback: !isCorrect && data.feedback ? data.feedback : null
+      };
 
-    if (isCorrect) {
-      setGameWon(true);
-      setGameOver(true);
-      const newStreakVal = updateStreak(true);
-      setStreak(newStreakVal);
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 4500);
-      setRevealedClues(new Array(dailyPlayer.clues.length).fill(true));
-    } else if (newGuesses.length >= maxGuesses) {
-      setGameOver(true);
-      updateStreak(false);
-      setStreak(0);
-      setRevealedClues(new Array(dailyPlayer.clues.length).fill(true));
-      setErrorMessage(`💀 Out of guesses! The player was ${dailyPlayer.name}`);
+      const newGuesses = [...guesses, newGuessEntry];
+      setGuesses(newGuesses);
+
+      // Set feedback for display
+      if (!isCorrect && data.feedback) {
+        setFeedback(data.feedback);
+        setTimeout(() => setFeedback(null), 5000);
+      }
+
+      if (isCorrect) {
+        setGameWon(true);
+        setGameOver(true);
+        const newStreakVal = updateStreak(true);
+        setStreak(newStreakVal);
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 4500);
+        setRevealedClues(new Array(dailyPlayer.clues.length).fill(true));
+
+        // Calculate time taken
+        const timeTaken = startTime ? Math.floor((Date.now() - startTime) / 1000) : null;
+
+        // Save game result
+        await fetch(`${API_BASE_URL}/save-game-result/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
+          },
+          body: JSON.stringify({
+            session_id: sessionId,
+            player_id: dailyPlayer.id,
+            won: true,
+            guesses_count: newGuesses.length,
+            clues_revealed_count: revealedClues.filter(Boolean).length,
+            score: getScore(),
+            time_taken: timeTaken
+          })
+        });
+      } else if (newGuesses.length >= maxGuesses) {
+        setGameOver(true);
+        updateStreak(false);
+        setStreak(0);
+        setRevealedClues(new Array(dailyPlayer.clues.length).fill(true));
+        setErrorMessage(`💀 Out of guesses! The player was ${dailyPlayer.name}`);
+        setShowError(true);
+
+        // Save game result
+        await fetch(`${API_BASE_URL}/save-game-result/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
+          },
+          body: JSON.stringify({
+            session_id: sessionId,
+            player_id: dailyPlayer.id,
+            won: false,
+            guesses_count: newGuesses.length,
+            clues_revealed_count: revealedClues.filter(Boolean).length,
+            score: 0,
+            time_taken: null
+          })
+        });
+      } else {
+        // Reveal a clue progressively with each wrong guess
+        const nextUnrevealed = revealedClues.findIndex(r => !r);
+        if (nextUnrevealed !== -1) {
+          const newRevealed = [...revealedClues];
+          newRevealed[nextUnrevealed] = true;
+          setRevealedClues(newRevealed);
+          setErrorMessage(`🔍 Clue ${nextUnrevealed + 1} revealed!`);
+          setShowError(true);
+          setTimeout(() => setShowError(false), 2000);
+        }
+
+        if (newGuesses.length === maxGuesses - 1) {
+          setErrorMessage("⚠️ Last chance! Make it count!");
+          setShowError(true);
+          setTimeout(() => setShowError(false), 2000);
+        }
+      }
+    } catch (error) {
+      console.error('Error validating guess:', error);
+      setErrorMessage('Error validating guess. Please try again.');
       setShowError(true);
-    } else {
-      // Reveal a clue progressively with each wrong guess
-      const nextUnrevealed = revealedClues.findIndex(r => !r);
-      if (nextUnrevealed !== -1) {
-        const newRevealed = [...revealedClues];
-        newRevealed[nextUnrevealed] = true;
-        setRevealedClues(newRevealed);
-        setErrorMessage(`🔍 Clue ${nextUnrevealed + 1} revealed!`);
-        setShowError(true);
-        setTimeout(() => setShowError(false), 2000);
-      }
-      
-      if (newGuesses.length === maxGuesses - 1) {
-        setErrorMessage("⚠️ Last chance! Make it count!");
-        setShowError(true);
-        setTimeout(() => setShowError(false), 2000);
-      }
+      setTimeout(() => setShowError(false), 3000);
     }
   };
 
@@ -221,8 +293,38 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [revealedClues, gameOver, gameWon]);
 
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+    // Refresh game state to ensure user-specific data is loaded
+    window.location.reload();
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-16 w-16 border-b-2 border-blue-500 rounded-full mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading today's challenge...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!dailyPlayer) {
-    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin h-16 w-16 border-b-2 border-blue-500 rounded-full"></div></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">Failed to load game data</p>
+          <button onClick={() => window.location.reload()} className="px-6 py-2 bg-blue-600 rounded-lg">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -237,9 +339,26 @@ export default function App() {
             <div className="font-mono text-blue-400">{formatTimeRemaining()}</div>
           </div>
           <h1 className="text-6xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">STATS</h1>
-          <StreakCounter streak={streak} />
+          <div className="flex items-center gap-3">
+            {user ? (
+              <UserProfile user={user} onLogout={handleLogout} />
+            ) : (
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full hover:from-blue-700 hover:to-purple-700 transition-all text-sm font-semibold"
+              >
+                Sign In / Register
+              </button>
+            )}
+            <StreakCounter streak={streak} />
+          </div>
         </div>
         <p className="text-slate-400">Daily NBA Player Trivia</p>
+        {!user && (
+          <p className="text-xs text-slate-500 mt-2">
+            💡 Sign in to track your stats and compare with other players!
+          </p>
+        )}
       </div>
 
       {/* Feedback Panel */}
@@ -273,7 +392,7 @@ export default function App() {
           <h2 className="text-2xl font-bold flex items-center gap-3">🔍 Clues <span className="text-sm font-normal text-slate-400">({cluesRevealedCount}/{dailyPlayer.clues.length})</span></h2>
         </div>
         <div className="h-2 bg-slate-700 rounded-full mb-6 overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-700" style={{width: `${(cluesRevealedCount / dailyPlayer.clues.length) * 100}%`}} />
+          <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-700" style={{ width: `${(cluesRevealedCount / dailyPlayer.clues.length) * 100}%` }} />
         </div>
 
         {dailyPlayer.clues.map((clue, i) => (
@@ -293,7 +412,7 @@ export default function App() {
                     <span className="text-2xl">{g.isCorrect ? '✅' : '❌'}</span>
                     <span className="font-medium">{g.text}</span>
                   </div>
-                  <span className="text-xs text-slate-500">{new Date(g.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                  <span className="text-xs text-slate-500">{new Date(g.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
                 {g.feedback && !g.isCorrect && (
                   <div className="mt-3 pt-3 border-t border-red-500/30 text-sm space-y-1">
@@ -313,17 +432,22 @@ export default function App() {
         </div>
       )}
 
-      <GuessInput 
-        onGuess={handleGuess} 
-        disabled={gameOver || gameWon} 
-        guessesLeft={maxGuesses - guesses.length} 
-        showError={showError} 
+      <GuessInput
+        onGuess={handleGuess}
+        disabled={gameOver || gameWon}
+        guessesLeft={maxGuesses - guesses.length}
+        showError={showError}
         errorMessage={errorMessage}
+        suggestions={playerNames}
       />
 
       <KeyboardHints />
 
       <GameStats {...getCareerStats()} />
+
+      <div className="mt-8">
+        <Leaderboard />
+      </div>
 
       {showShareModal && (
         <ShareModal
@@ -334,6 +458,14 @@ export default function App() {
           playerName={dailyPlayer.name}
           score={getScore()}
           onClose={() => setShowShareModal(false)}
+        />
+      )}
+
+      {showAuthModal && (
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onLoginSuccess={handleLoginSuccess}
         />
       )}
     </div>
