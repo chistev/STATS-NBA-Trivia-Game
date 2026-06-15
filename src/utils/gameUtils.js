@@ -18,27 +18,23 @@ export const loadGameState = () => {
 
 export const updateStreak = (won) => {
   try {
-    const currentStreak = parseInt(localStorage.getItem('stats-streak') || '0');
-    const gamesPlayed = parseInt(localStorage.getItem('stats-games-played') || '0');
-    const wins = parseInt(localStorage.getItem('stats-wins') || '0');
-    const bestStreak = parseInt(localStorage.getItem('stats-best-streak') || '0');
-    
-    let newStreak = currentStreak;
-    
+    let currentStreak = parseInt(localStorage.getItem('stats-streak') || '0');
+    let gamesPlayed = parseInt(localStorage.getItem('stats-games-played') || '0');
+    let wins = parseInt(localStorage.getItem('stats-wins') || '0');
+    let bestStreak = parseInt(localStorage.getItem('stats-best-streak') || '0');
+
+    let newStreak = won ? currentStreak + 1 : 0;
+
     if (won) {
-      newStreak = currentStreak + 1;
-      localStorage.setItem('stats-wins', (wins + 1).toString());
-      
-      if (newStreak > bestStreak) {
-        localStorage.setItem('stats-best-streak', newStreak.toString());
-      }
-    } else {
-      newStreak = 0;
+      wins += 1;
+      if (newStreak > bestStreak) bestStreak = newStreak;
+      localStorage.setItem('stats-wins', wins.toString());
     }
-    
+
     localStorage.setItem('stats-streak', newStreak.toString());
     localStorage.setItem('stats-games-played', (gamesPlayed + 1).toString());
-    
+    localStorage.setItem('stats-best-streak', bestStreak.toString());
+
     return newStreak;
   } catch (error) {
     console.error('Error updating streak:', error);
@@ -48,19 +44,18 @@ export const updateStreak = (won) => {
 
 export const getCareerStats = () => {
   try {
+    const gamesPlayed = parseInt(localStorage.getItem('stats-games-played') || '0');
+    const wins = parseInt(localStorage.getItem('stats-wins') || '0');
+    const winRate = gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0;
+
     return {
-      gamesPlayed: parseInt(localStorage.getItem('stats-games-played') || '0'),
-      wins: parseInt(localStorage.getItem('stats-wins') || '0'),
+      gamesPlayed,
+      winRate,
       currentStreak: parseInt(localStorage.getItem('stats-streak') || '0'),
       bestStreak: parseInt(localStorage.getItem('stats-best-streak') || '0')
     };
   } catch (error) {
     console.error('Error getting career stats:', error);
-    return {
-      gamesPlayed: 0,
-      wins: 0,
-      currentStreak: 0,
-      bestStreak: 0
-    };
+    return { gamesPlayed: 0, winRate: 0, currentStreak: 0, bestStreak: 0 };
   }
 };

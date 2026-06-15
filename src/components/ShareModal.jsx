@@ -1,27 +1,27 @@
 import { X, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 
-export default function ShareModal({ guesses, maxGuesses, cluesRevealed, totalClues, onClose }) {
+export default function ShareModal({ guesses, maxGuesses, cluesRevealed, totalClues, playerName, score, onClose }) {
   const [copied, setCopied] = useState(false);
-  
+
   const getShareText = () => {
-    const score = maxGuesses - guesses + 1;
     const clueEmoji = '🔍'.repeat(cluesRevealed);
     const emptyClue = '⬜'.repeat(totalClues - cluesRevealed);
     
     return `STATS NBA Trivia - Daily Challenge\n\n` +
            `🎯 Solved in ${guesses} ${guesses === 1 ? 'guess' : 'guesses'}!\n` +
-           `📊 Score: ${score}/${maxGuesses}\n` +
-           `🔍 Clues: ${clueEmoji}${emptyClue}\n\n` +
+           `📊 Score: ${score} pts\n` +
+           `🔍 Clues: ${clueEmoji}${emptyClue}\n` +
+           `🏀 Player: ${playerName}\n\n` +
            `Play daily at STATS.game 🏀`;
   };
-  
+
   const handleCopy = async () => {
     await navigator.clipboard.writeText(getShareText());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-  
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-slate-700">
@@ -32,10 +32,8 @@ export default function ShareModal({ guesses, maxGuesses, cluesRevealed, totalCl
           </button>
         </div>
         
-        <div className="bg-slate-800 p-4 rounded-xl mb-4">
-          <pre className="text-sm whitespace-pre-wrap font-mono">
-            {getShareText()}
-          </pre>
+        <div className="bg-slate-800 p-4 rounded-xl mb-4 font-mono text-sm whitespace-pre-wrap">
+          {getShareText()}
         </div>
         
         <button
@@ -43,7 +41,7 @@ export default function ShareModal({ guesses, maxGuesses, cluesRevealed, totalCl
           className="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
         >
           {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-          {copied ? 'Copied!' : 'Copy to Clipboard'}
+          {copied ? 'Copied to Clipboard!' : 'Copy to Clipboard'}
         </button>
       </div>
     </div>
