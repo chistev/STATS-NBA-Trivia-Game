@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { X, User, Mail, Lock, LogIn } from 'lucide-react';
+import { X, User, Lock, LogIn } from 'lucide-react';
 
 export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     username: '',
-    email: '',
     password: '',
-    password_confirm: ''
+    password_confirm: '' 
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,6 +16,13 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    // Validate password match before submitting
+    if (!isLogin && formData.password !== formData.password_confirm) {
+      setError('Passwords do not match');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -26,7 +32,6 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
         password: formData.password
       } : {
         username: formData.username,
-        email: formData.email,
         password: formData.password,
         password_confirm: formData.password_confirm
       };
@@ -40,7 +45,6 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
       const data = await response.json();
 
       if (response.ok) {
-        // Store tokens
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
         localStorage.setItem('user', JSON.stringify(data.user));
@@ -103,26 +107,6 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
             </div>
           </div>
 
-          {!isLogin && (
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500 text-white"
-                  placeholder="Enter email"
-                />
-              </div>
-            </div>
-          )}
-
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Password
@@ -172,7 +156,10 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
 
         <div className="mt-4 text-center">
           <button
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError(''); // Clear error when switching modes
+            }}
             className="text-sm text-blue-400 hover:text-blue-300"
           >
             {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
