@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">95.23% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/21</span>
+                <span class='fraction'>20/21</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/39</span>
+                <span class='fraction'>39/39</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">83.33% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>5/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">93.33% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/15</span>
+                <span class='fraction'>14/15</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -131,33 +131,33 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">38x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">38x</span>
+<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">38x</span>
+<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -194,24 +194,24 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { useState } from 'react';
 import { Eye, EyeOff, Trophy, Award, Star, Lock } from 'lucide-react';
 &nbsp;
-export default function <span class="fstat-no" title="function not covered" >ClueCard({</span> clue, index, revealed, onReveal, disabled }) {
-  const [isHovered, <span class="cstat-no" title="statement not covered" >setIsHovered] = useState(false);</span>
+export default function ClueCard({ clue, index, revealed, onReveal, disabled }) {
+  const [isHovered, setIsHovered] = useState(false);
   
-  const <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >getClueIcon = () =&gt; {</span></span>
-<span class="cstat-no" title="statement not covered" >    if (index === 0) <span class="cstat-no" title="statement not covered" >return &lt;Trophy className="w-4 h-4" /&gt;;</span></span>
-<span class="cstat-no" title="statement not covered" >    if (index === 1) <span class="cstat-no" title="statement not covered" >return &lt;Award className="w-4 h-4" /&gt;;</span></span>
-<span class="cstat-no" title="statement not covered" >    if (index === 2) <span class="cstat-no" title="statement not covered" >return &lt;Star className="w-4 h-4" /&gt;;</span></span>
-<span class="cstat-no" title="statement not covered" >    return null;</span>
+  const getClueIcon = () =&gt; {
+    if (index === 0) return &lt;Trophy className="w-4 h-4" /&gt;;
+    if (index === 1) return &lt;Award className="w-4 h-4" /&gt;;
+    if (index === 2) return &lt;Star className="w-4 h-4" /&gt;;
+    return null;
   };
 &nbsp;
-  const <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >getDifficultyBadge = () =&gt; {</span></span>
-<span class="cstat-no" title="statement not covered" >    if (index === 0) <span class="cstat-no" title="statement not covered" >return &lt;span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full"&gt;Easy&lt;/span&gt;;</span></span>
-<span class="cstat-no" title="statement not covered" >    if (index === 1) <span class="cstat-no" title="statement not covered" >return &lt;span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full"&gt;Medium&lt;/span&gt;;</span></span>
-<span class="cstat-no" title="statement not covered" >    if (index === 2) <span class="cstat-no" title="statement not covered" >return &lt;span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full"&gt;Hard&lt;/span&gt;;</span></span>
-<span class="cstat-no" title="statement not covered" >    return &lt;span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full"&gt;Expert&lt;/span&gt;;</span>
+  const getDifficultyBadge = () =&gt; {
+    if (index === 0) return &lt;span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full"&gt;Easy&lt;/span&gt;;
+    if (index === 1) return &lt;span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full"&gt;Medium&lt;/span&gt;;
+    if (index === 2) return &lt;span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full"&gt;Hard&lt;/span&gt;;
+    return &lt;span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full"&gt;Expert&lt;/span&gt;;
   };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  return (</span>
+  return (
     &lt;div
       className={`clue-card p-5 rounded-2xl border transition-all duration-300 mb-3 ${
         !revealed &amp;&amp; !disabled
@@ -220,8 +220,8 @@ export default function <span class="fstat-no" title="function not covered" >Clu
           ? 'revealed bg-gradient-to-r from-blue-900/40 to-purple-900/40 border-blue-500 shadow-lg shadow-blue-500/10'
           : 'opacity-50 bg-slate-900/30 border-slate-700'
       }`}
-<span class="fstat-no" title="function not covered" >      onClick={() =&gt; <span class="cstat-no" title="statement not covered" >!</span>revealed &amp;&amp; !disabled &amp;&amp; onReveal(index)}</span>
-<span class="fstat-no" title="function not covered" >      onMouseEnter={() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etIsHovered(true)}</span>
+      onClick={() =&gt; !revealed &amp;&amp; !disabled &amp;&amp; onReveal(index)}
+      onMouseEnter={() =&gt; setIsHovered(true)}
 <span class="fstat-no" title="function not covered" >      onMouseLeave={() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etIsHovered(false)}</span>
     &gt;
       &lt;div className="flex items-start gap-4"&gt;
@@ -262,7 +262,7 @@ export default function <span class="fstat-no" title="function not covered" >Clu
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-16T18:14:16.006Z
+                at 2026-06-17T17:05:08.955Z
             </div>
         <script src="../prettify.js"></script>
         <script>
