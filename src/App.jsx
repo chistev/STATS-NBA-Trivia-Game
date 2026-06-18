@@ -7,7 +7,6 @@ import ShareModal from './components/ShareModal';
 import StreakCounter from './components/StreakCounter';
 import KeyboardHints from './components/KeyboardHints';
 import Confetti from './components/Confetti';
-import FeedbackPanel from './components/FeedbackPanel';
 import AuthModal from './components/AuthModal';
 import UserProfile from './components/UserProfile';
 import Leaderboard from './components/Leaderboard';
@@ -360,9 +359,6 @@ export default function App() {
           </p>
         )}
       </div>
-
-      {/* Feedback Panel */}
-      <FeedbackPanel feedback={feedback} />
 
       {/* Status */}
       {(gameOver || gameWon) && (
